@@ -1,11 +1,8 @@
 const {response} = require("express");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const generateJwt = require("./utils/jwt.js")
-
 const express = require("express");
-
+const jwt = require("./utils/jwt.js")
 const app = express();
 app.use(express.json());
 
@@ -33,15 +30,7 @@ app.post("/users/sign-up", async function(req, res){
 
     console.log(users)
 
-    const payload = {
-        user: {
-        id: userId
-        }
-    }
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {expiresIn: "1h"})
-
-    res.send({jwtToken: generateJwt(userId), isAuthenticated: true})
+    res.send({jwtToken: jwt.generateJwt(userId), isAuthenticated: true})
 });
 
 
@@ -61,11 +50,11 @@ app.post("/users/sign-in", async function(request, response){
         return response.status(401).json({error: "Invalid Credential", isAuthenticated: false});
     }
 
-    response.send({jwtToken: generateJwt(foundUser.id), isAuthenticated: true})
+    response.send({jwtToken: jwt.generateJwt(foundUser.id), isAuthenticated: true})
 })
 
 app.get("/quotes", auth, function(request, response){
-    response.send("A beautiful quote!")
+    response.send(`A beautiful quote for user ${request.user.id}`)
 });
 
 function auth(req, res, next){
@@ -74,11 +63,12 @@ function auth(req, res, next){
 
     try {
 
-        const verify = jwt.verify(token, proccess.env.JWT_SECRET)
+        const verify = jwt.verifyJwt(token)
+
         req.user = verify.user
 
         next()
-    } catch {
+    } catch (err) {
         res.status(403).send("Invalid token")
     }
 
